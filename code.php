@@ -2,52 +2,63 @@
 	const YANDEX_DISK_URL = 'https://cloud-api.yandex.net/v1/disk/resources/';
 	const ACCESS_TOKEN = 'AQAAAAAGQRIiAASRLdB48WuCdEYOrTdjj22GmbY';
 	const CLOUD_DIRECTORY = '/CodeXBackEndTest/';
-	const FILE_FORMAT = '.jpg';
+	
+	const DB_LOCATION = 'localhost';
+	const DB_USER = 'user';
+	const DB_PASSWORD = '';
+	const DB_NAME = 'codex_test';
+	
+	$mysqli = mysqli_connect(DB_LOCATION, DB_USER, DB_PASSWORD, DB_NAME);
 	
 	if(isset($_FILES['photo'])) { //Загрузка фото
 		if($_FILES['photo']['error'] == 0) {
-			if(file_exists('./count.txt') == true) {
-				$fp = fopen('./count.txt', 'r');
-				$count = intval(fread($fp, filesize('./count.txt')));
-				fclose($fp);
+			if(strstr($_FILES['photo']['name'], '.jpg') != false || strstr($_FILES['photo']['name'], '.jpeg') != false) $fileFormat = '.jpg';
+			else if(strstr($_FILES['photo']['name'], '.png') != false) $fileFormat = '.png';
+			else if(strstr($_FILES['photo']['name'], '.gif') != false) $fileFormat = '.gif';
+			else if(strstr($_FILES['photo']['name'], '.bmp') != false) $fileFormat = '.bmp';
+			else { 
+				echo 'Ошибка при загрузке файла. Код ошибки: -1(Foramt error)';
+				goto formaterror;
 			}
-			else $count = 0;
-			$count++;
-			$fp = fopen('./count.txt', 'w+');
-			fwrite($fp, $count);
-			fclose($fp);
+				
+			$res = $mysqli->query("SELECT max(id) FROM `photo`");
+			$row = $res->fetch_assoc();
 			
 			$fileName = $_FILES['photo']['tmp_name'];
-			$newName = $count . FILE_FORMAT;
+			$newName = ($row['max(id)'] + 1) . $fileFormat;
 			
 			$result = request(YANDEX_DISK_URL . 'upload?path=' . CLOUD_DIRECTORY . $newName . '&overwrite=true', array(
 			'Authorization: OAuth ' . ACCESS_TOKEN
 			), 0);
+			$mysqli->query("INSERT INTO `photo`(`format`) VALUES ('" . str_replace('.', '', $fileFormat) . "')");
 			
 			upload(json_decode(stristr($result, '{'))->href, $fileName);
 			
-			echo 'Файл загружен. ID файла: ' . $count;
+			echo 'Файл загружен. ID файла: ' . ($row['max(id)'] + 1);
+			formaterror:
 		}
 		else echo 'Ошибка при загрузке файла. Код ошибки: ' . $_FILES['photo']['error'];
 	}
 	if(isset($_POST["URL"])) {
-		echo '1';
-		if(file_exists('./count.txt') == true) {
-			$fp = fopen('./count.txt', 'r');
-			$count = intval(fread($fp, filesize('./count.txt')));
-			fclose($fp);
+		if(strstr($_FILES['photo']['name'], '.jpg') != false || strstr($_FILES['photo']['name'], '.jpeg') != false) $fileFormat = '.jpg';
+		else if(strstr($_FILES['photo']['name'], '.png') != false) $fileFormat = '.png';
+		else if(strstr($_FILES['photo']['name'], '.gif') != false) $fileFormat = '.gif';
+		else if(strstr($_FILES['photo']['name'], '.bmp') != false) $fileFormat = '.bmp';
+		else { 
+			echo 'Ошибка при загрузке файла. Код ошибки: -1(Foramt error)';
+			goto formaterror;
 		}
-		else $count = 0;
-		$count++;
-		$fp = fopen('./count.txt', 'w+');
-		fwrite($fp, $count);
-		fclose($fp);
+				
+		$res = $mysqli->query("SELECT max(id) FROM `photo`");
+		$row = $res->fetch_assoc();
 		
-		$newName = $count . FILE_FORMAT;
+		$newName = ($row['max(id)'] + 1) . $fileFormat;
 		
 		$result = request(YANDEX_DISK_URL . 'upload?url=' . $_POST["URL"] . '&path=' . CLOUD_DIRECTORY . $newName, array(
 		'Authorization: OAuth ' . ACCESS_TOKEN
 		), 1);
+		
+		$mysqli->query("INSERT INTO `photo`(`format`) VALUES ('" . str_replace('.', '', $fileFormat) . "')");
 		
 		echo 'Загрузка файла начата. ID файла: ' . $count;
 	}
@@ -66,13 +77,18 @@
 		}
 		else if($_GET['method'] == 'get') {
 			if(isset($_GET['id'])) {
-				$result = request(YANDEX_DISK_URL . 'download?path=/CodeXBackEndTest/' . $_GET['id'] . FILE_FORMAT, array(
+				$res = $mysqli->query("SELECT * FROM `photo` WHERE `id` = " . $_GET['id']);
+				$row = $res->fetch_assoc();
+				$result = request(YANDEX_DISK_URL . 'download?path=/CodeXBackEndTest/' . $_GET['id'] . '.' . $row['format'], array(
 				'Authorization: OAuth ' . ACCESS_TOKEN, 
 				'Accept: application/json', 
 				'Content-Type: application/json'
 				), 0);
-				if(FILE_FORMAT == '.jpeg' || FILE_FORMAT == '.jpg') $im = imagecreatefromjpeg(json_decode(stristr($result, '{'))->href);
-				else if(FILE_FORMAT == '.png') $im = imagecreatefrompng(json_decode(stristr($result, '{'))->href);
+				
+				if($row['format'] == 'jpg') $im = imagecreatefromjpeg(json_decode(stristr($result, '{'))->href);
+				else if($row['format'] == 'png') $im = imagecreatefrompng(json_decode(stristr($result, '{'))->href);
+				else if($row['format'] == 'gif') $im = imagecreatefromgif(json_decode(stristr($result, '{'))->href);
+				else if($row['format'] == 'bmp') $im = imagecreatefrombmp(json_decode(stristr($result, '{'))->href);
 				
 				if($im != false){
 					if(isset($_GET['filter'])) {	
@@ -92,7 +108,7 @@
 						$im = $image_p;
 					}
 					
-					header('Content-Type: image/' . str_replace('.', '', FILE_FORMAT));
+					header('Content-Type: image/' . str_replace('.', '', $row['format']));
 					imagejpeg($im);
 					imagedestroy($im);
 				}

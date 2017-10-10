@@ -1,0 +1,4 @@
+RewriteEngine on
+RewriteRule ^/$ /index.php?method=upload
+RewriteRule ^(.*)/$ /code.php?method=get&id=$1
+RewriteRule ^(.*)/(.*)/$ /code.php?method=get&id=$1&format=$2
