@@ -1,6 +1,6 @@
 <?php
 	const YANDEX_DISK_URL = 'https://cloud-api.yandex.net/v1/disk/resources/';
-	const ACCESS_TOKEN = 'AQAAAAAGQRIiAASRLdB48WuCdEYOrTdjj22GmbY';
+	const ACCESS_TOKEN = '';
 	const CLOUD_DIRECTORY = '/CodeXBackEndTest/';
 	
 	const DB_LOCATION = 'localhost';
