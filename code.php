@@ -1,12 +1,16 @@
 <?php
 	const YANDEX_DISK_URL = 'https://cloud-api.yandex.net/v1/disk/resources/';
-	const ACCESS_TOKEN = '';
 	const CLOUD_DIRECTORY = '/CodeXBackEndTest/';
 	
-	const DB_LOCATION = 'localhost';
-	const DB_USER = 'user';
-	const DB_PASSWORD = '';
-	const DB_NAME = 'codex_test';
+	/*
+	ACCESS_TOKEN
+	
+	DB_LOCATION
+	DB_USER
+	DB_PASSWORD
+	DB_NAME
+	*/
+	include_once './config.php';
 	
 	$mysqli = mysqli_connect(DB_LOCATION, DB_USER, DB_PASSWORD, DB_NAME);
 	
